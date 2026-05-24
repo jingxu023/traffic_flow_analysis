@@ -40,13 +40,13 @@ The project combines traditional machine learning with large language model (LLM
 
 ### Main Dashboard
 
-![Dashboard Screenshot](Screenshot%202026-05-24%20at%2007.33.12.png)
+![Dashboard Screenshot](Screenshot%202026-05-24%20at%2007.33.03.png)
 
 ---
 
 ### AI Traffic Analyst Assistant
 
-![AI Assistant Screenshot](Screenshot%202026-05-24%20at%2007.33.03.png)
+![AI Assistant Screenshot](Screenshot%202026-05-24%20at%2007.33.12.png)
 
 ---
 
