@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import pickle
 
+import os from dotenv 
+import load_dotenv from openai import OpenAI
 
 # Page settings
 st.set_page_config(
