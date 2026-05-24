@@ -48,7 +48,7 @@ The traffic situation is categorized into different levels such as heavy, high, 
 ## Project Files
 
 ```text
-Traffic Prediction Dataset.ipynb   # Data analysis and exploration notebook
+Traffic Prediction.ipynb           # Data analysis and exploration notebook
 Traffic.csv                        # Traffic dataset
 train_model.py                     # Model training script
 app.py                             # Streamlit web application
