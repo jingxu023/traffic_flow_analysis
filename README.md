@@ -1,57 +1,187 @@
-# Traffic Flow Analysis and Prediction
+# AI-Powered Traffic Analytics Dashboard
 
-This project analyzes traffic flow patterns using vehicle count data and builds a machine learning model to predict traffic conditions. The project includes data exploration, model training, and an interactive Streamlit web application for displaying prediction results.
+An interactive Streamlit dashboard that combines machine learning, traffic prediction, and OpenAI-powered mobility analytics.
+
+This project was developed to explore how AI-assisted workflows can support traffic analysis, congestion interpretation, and mobility-related decision making.
+
+---
 
 ## Project Overview
 
-Traffic congestion is an important issue in urban areas. This project uses a traffic dataset containing vehicle counts for different vehicle types, including cars, bikes, buses, and trucks. The dataset also includes time, date, day of the week, total vehicle count, and traffic situation labels.
+The application allows users to:
 
-The goal of this project is to understand traffic patterns and predict traffic situations based on vehicle count and time-related features.
+- Input traffic conditions manually
+- Predict traffic situations using a Decision Tree machine learning model
+- Interact with an AI-powered Traffic Analyst Assistant
+- Receive natural-language explanations and mobility-related recommendations
+- Explore conversational traffic insights with chat history support
+
+The project combines traditional machine learning with large language model (LLM) integration to create an AI-assisted traffic analytics workflow.
+
+---
 
 ## Features
 
-- Data cleaning and preprocessing
-- Exploratory data analysis using Python
-- Vehicle count analysis by time and day
-- Machine learning model for traffic situation prediction
-- Label encoding for categorical variables
-- Streamlit web app for interactive prediction
-- Saved model files for reuse
+- Traffic situation prediction using a trained Decision Tree classifier
+- Interactive Streamlit dashboard interface
+- Vehicle traffic input for:
+  - Cars
+  - Bikes
+  - Buses
+  - Trucks
+- AI-powered Traffic Analyst Assistant using OpenAI API
+- Conversational AI interaction with chat history
+- Mobility-related congestion analysis and recommendations
+- Natural-language interpretation of prediction results
 
-## Dataset
+---
 
-The dataset contains traffic information collected at regular time intervals. Main columns include:
+## Dashboard Preview
 
-- Time
-- Date
-- Day of the week
-- Car count
-- Bike count
-- Bus count
-- Truck count
-- Total vehicle count
-- Traffic situation
+### Main Dashboard
 
-The traffic situation is categorized into different levels such as heavy, high, normal, and low traffic.
+![Dashboard Screenshot](Screenshot%202026-05-24%20at%2007.33.12.png)
+
+---
+
+### AI Traffic Analyst Assistant
+
+![AI Assistant Screenshot](Screenshot%202026-05-24%20at%2007.33.03.png)
+
+---
+
+## AI Traffic Analyst Assistant
+
+The dashboard includes an AI-powered assistant that allows users to ask natural-language questions about traffic situations and mobility patterns.
+
+The assistant can:
+
+- Explain predicted traffic conditions
+- Analyze vehicle composition
+- Identify possible congestion trends
+- Suggest mobility-related improvements
+- Support traffic interpretation with conversational context
+
+### Example Questions
+
+- "What does this traffic situation mean?"
+- "Which vehicle type contributes most to traffic volume?"
+- "What could mobility planners learn from this result?"
+- "Give one recommendation to reduce congestion."
+
+---
+
+## Workflow
+
+The system combines machine learning prediction with AI-powered analysis.
+
+```text
+User Input
+    ↓
+Traffic Prediction Model
+    ↓
+Prediction Result
+    ↓
+Context Generation
+    ↓
+OpenAI API
+    ↓
+AI Traffic Analysis Response
+```
+
+---
+
+## Machine Learning Model
+
+Two Decision Tree classification models were tested during development.
+
+- Model 1 included the `Total` vehicle count feature and achieved perfect accuracy.
+- Model 2 excluded the redundant `Total` feature to improve interpretability and reduce feature dependency.
+
+The final application uses the more interpretable model configuration for prediction and AI-assisted analysis.
+
+---
 
 ## Technologies Used
 
 - Python
 - Pandas
-- NumPy
 - Scikit-learn
+- Streamlit
+- OpenAI API
 - Matplotlib
 - Seaborn
-- Streamlit
-- Jupyter Notebook
+- Pickle
+- Git / GitHub
 
-## Project Files
+---
+
+## Project Structure
 
 ```text
-Traffic Prediction.ipynb           # Data analysis and exploration notebook
-Traffic.csv                        # Traffic dataset
-train_model.py                     # Model training script
-app.py                             # Streamlit web application
-traffic_model.pkl                  # Saved machine learning model
-label_encoder_day.pkl              # Saved encoder for day feature
-label_encoder_target.pkl           # Saved encoder for target labels
+traffic_flow_analysis/
+│
+├── app.py
+├── traffic_model.pkl
+├── label_encoder_day.pkl
+├── label_encoder_target.pkl
+├── requirements.txt
+├── .env
+├── .gitignore
+├── README.md
+└── Traffic Prediction.ipynb
+```
+
+---
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/jingxu023/traffic_flow_analysis.git
+cd traffic_flow_analysis
+```
+
+Create and activate a virtual environment:
+
+```bash
+python3 -m venv myvenv
+source myvenv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## OpenAI API Setup
+
+Create a `.env` file in the project root:
+
+```env
+OPENAI_API_KEY=your_api_key_here
+```
+
+---
+
+## Run the App
+
+```bash
+streamlit run app.py
+```
+
+---
+
+## Future Improvements
+
+- Real-time traffic data integration
+- CSV upload support
+- LangChain-based workflow orchestration
+- Automated anomaly detection
+- Multi-agent traffic analysis workflows
+- Cloud deployment support
+
