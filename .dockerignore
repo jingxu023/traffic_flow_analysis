@@ -1,0 +1,10 @@
+.git
+.env
+.DS_Store
+myvenv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+Traffic Prediction.ipynb
+Screenshot*.png

@@ -1,6 +1,7 @@
-# AI-Powered Traffic Analytics Dashboard
+# Traffic Analytics and DevOps Demo
 
-An interactive Streamlit dashboard that combines machine learning, traffic prediction, and OpenAI-powered mobility analytics.
+An interactive Streamlit dashboard that combines traffic prediction, machine learning,
+and optional AI-powered mobility analytics with a basic DevOps workflow.
 
 This project was developed to explore how AI-assisted workflows can support traffic analysis, congestion interpretation, and mobility-related decision making.
 
@@ -15,6 +16,7 @@ The application allows users to:
 - Interact with an AI-powered Traffic Analyst Assistant
 - Receive natural-language explanations and mobility-related recommendations
 - Explore conversational traffic insights with chat history support
+- Run the service consistently in a local or cloud container environment
 
 The project combines traditional machine learning with large language model (LLM) integration to create an AI-assisted traffic analytics workflow.
 
@@ -113,6 +115,9 @@ The final application uses the more interpretable model configuration for predic
 - Seaborn
 - Pickle
 - Git / GitHub
+- Docker
+- Pytest and Ruff
+- GitHub Actions
 
 ---
 
@@ -122,10 +127,16 @@ The final application uses the more interpretable model configuration for predic
 traffic_flow_analysis/
 │
 ├── app.py
+├── src/prediction.py
+├── tests/test_prediction.py
+├── Dockerfile
+├── docker-compose.yml
+├── .github/workflows/ci.yml
 ├── traffic_model.pkl
 ├── label_encoder_day.pkl
 ├── label_encoder_target.pkl
-├── requirements.txt
+├── requirements-app.txt
+├── requirements-dev.txt
 ├── .env
 ├── .gitignore
 ├── README.md
@@ -153,7 +164,7 @@ source myvenv/bin/activate
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-app.txt
 ```
 
 ---
@@ -174,6 +185,50 @@ OPENAI_API_KEY=your_api_key_here
 streamlit run app.py
 ```
 
+## DevOps Workflow
+
+The repository includes a small but complete development and operations workflow:
+
+- A Docker container with a Streamlit health check
+- Automated linting, tests, and image builds in GitHub Actions
+- Structured prediction logs including result and execution time
+- Environment-based secret configuration; `.env` is never committed
+- Input validation and operation without an OpenAI API key
+
+Run the test suite locally:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+ruff check app.py train_model.py src tests
+```
+
+Run the containerized service:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8501`. The health endpoint is available at
+`http://localhost:8501/_stcore/health`.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User[Planner] --> UI[Streamlit dashboard]
+    UI --> Prediction[Prediction service]
+    Prediction --> Model[Versioned ML model]
+    UI -. optional .-> OpenAI[AI traffic analyst]
+    Prediction --> Logs[Structured logs and timing]
+    GitHub[GitHub Actions] --> Tests[Lint and tests]
+    Tests --> Image[Docker image]
+```
+
+The dashboard currently focuses on traffic prediction rather than claiming to be a
+complete digital twin. The architecture could later be extended with live infrastructure
+data, railway sections, train movements, delays, or infrastructure condition data.
+
 ---
 
 ## Future Improvements
@@ -183,5 +238,5 @@ streamlit run app.py
 - LangChain-based workflow orchestration
 - Automated anomaly detection
 - Multi-agent traffic analysis workflows
-- Cloud deployment support
-
+- Prometheus metrics and a Grafana dashboard
+- Deployment to Azure Container Apps or Kubernetes

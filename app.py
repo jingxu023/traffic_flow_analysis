@@ -1,46 +1,43 @@
 import os
-import pickle
+import logging
 import streamlit as st
-import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
+
+from src.prediction import build_features, load_model_bundle, predict_traffic
 
 # =========================
 # OpenAI setup
 # =========================
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s level=%(levelname)s logger=%(name)s %(message)s",
+)
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key) if api_key else None
 
 # =========================
 # Page settings
 # =========================
 st.set_page_config(
-    page_title="Traffic Situation Prediction App",
+    page_title="Traffic Analytics Dashboard",
     page_icon="🚦",
     layout="centered"
 )
 
-st.title("🚦 Traffic Situation Prediction App")
-st.write("Predict traffic situation and ask the AI Traffic Analyst for insights.")
+st.title("🚦 Traffic Analytics Dashboard")
+st.write("Predict traffic conditions and explore mobility insights.")
 
 # =========================
 # Load model and encoders
 # =========================
 @st.cache_resource
 def load_model():
-    with open("traffic_model.pkl", "rb") as file:
-        model = pickle.load(file)
-
-    with open("label_encoder_day.pkl", "rb") as file:
-        le_day = pickle.load(file)
-
-    with open("label_encoder_target.pkl", "rb") as file:
-        le_target = pickle.load(file)
-
-    return model, le_day, le_target
+    return load_model_bundle()
 
 
-model, le_day, le_target = load_model()
+model_bundle = load_model()
 
 # =========================
 # Chat history
@@ -57,7 +54,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     time = st.slider("Time of day", 0, 23, 8)
-    day = st.selectbox("Day of the week", le_day.classes_)
+    day = st.selectbox("Day of the week", model_bundle.day_encoder.classes_)
 
 with col2:
     car_count = st.number_input("Car Count", min_value=0, value=50)
@@ -73,20 +70,18 @@ st.write(f"**Total Vehicles:** {total}")
 # =========================
 # Prediction
 # =========================
-encoded_day = le_day.transform([day])[0]
-
-input_data = pd.DataFrame({
-    "Date": [time],
-    "Day of the week": [encoded_day],
-    "CarCount": [car_count],
-    "BikeCount": [bike_count],
-    "BusCount": [bus_count],
-    "TruckCount": [truck_count]
-})
+input_data = build_features(
+    model_bundle,
+    hour=time,
+    day=day,
+    car_count=car_count,
+    bike_count=bike_count,
+    bus_count=bus_count,
+    truck_count=truck_count,
+)
 
 if st.button("Predict Traffic Situation"):
-    prediction = model.predict(input_data)[0]
-    prediction_label = le_target.inverse_transform([prediction])[0]
+    prediction_label = predict_traffic(model_bundle, input_data)
 
     st.success(f"Predicted Traffic Situation: **{prediction_label}**")
 
@@ -129,6 +124,9 @@ def build_prediction_context():
 
 
 def ask_ai_traffic_analyst(question, context, chat_history):
+    if client is None:
+        return "The AI analyst is disabled. Set OPENAI_API_KEY to enable it."
+
     history_text = ""
 
     for msg in chat_history[-6:]:

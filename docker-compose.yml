@@ -1,0 +1,11 @@
+services:
+  traffic-digital-twin:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LOG_LEVEL: INFO
+    restart: unless-stopped

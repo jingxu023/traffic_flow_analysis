@@ -6,12 +6,17 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
+from src.prediction import FEATURE_COLUMNS
+
 
 # 1. Load dataset
 df = pd.read_csv("Traffic.csv")
 
 # 2. Copy dataset for modeling
 model_df = df.copy()
+
+# Convert the source time (for example 12:15:00 PM) into the hour used by the app.
+model_df["Hour"] = pd.to_datetime(model_df["Time"], format="%I:%M:%S %p").dt.hour
 
 # 3. Encode categorical columns
 le_day = LabelEncoder()
@@ -22,7 +27,7 @@ model_df["Traffic Situation"] = le_target.fit_transform(model_df["Traffic Situat
 
 # 4. Define features and target
 # We do NOT use Total here because the model without Total is more realistic.
-X = model_df[["Date", "Day of the week", "CarCount", "BikeCount", "BusCount", "TruckCount"]]
+X = model_df[FEATURE_COLUMNS]
 y = model_df["Traffic Situation"]
 
 # 5. Split data

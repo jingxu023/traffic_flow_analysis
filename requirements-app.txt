@@ -1,0 +1,5 @@
+openai==2.38.0
+pandas==3.0.3
+python-dotenv==1.2.2
+scikit-learn==1.8.0
+streamlit==1.57.0
