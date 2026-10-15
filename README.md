@@ -1,4 +1,4 @@
-# Traffic Prediction Dashboard
+# Traffic Flow Analysis
 
 A Streamlit dashboard for exploring traffic data with a Decision Tree classifier, a time-based traffic-volume comparison, and an optional OpenAI assistant.
 
