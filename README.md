@@ -240,3 +240,12 @@ data, railway sections, train movements, delays, or infrastructure condition dat
 - Multi-agent traffic analysis workflows
 - Prometheus metrics and a Grafana dashboard
 - Deployment to Azure Container Apps or Kubernetes
+
+
+## V2 – relative traffic-volume classification (weekday + hour)
+
+The app has exactly two modes: **V1** (original Kaggle-label Decision Tree) and **V2** (weekday-and-hour relative traffic volume). V2 compares 15-minute vehicle totals to the median observed for the selected weekday and hour in a training-only subset. Groups with fewer than eight observations fall back to the hour-only median. Four categories are derived from quartiles of relative ratios in training data.
+
+**Limitations:** Source weekday labels are not independently calendar-verified because full month/year timestamps are unavailable and the date sequence is inconsistent. This is an exploratory relative traffic-volume indicator, **not** measured congestion, a real-time system, or future-flow prediction. See `README_V2.md` for further details.
+
+Regenerate reference data: `python build_weekday_v2.py --csv Traffic.csv`. Run tests: `python -m pytest -q`.

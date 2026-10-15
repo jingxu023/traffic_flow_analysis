@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from src.prediction import build_features, load_model_bundle, predict_traffic
+from src.relative_weekday import WeekdayRelativeTrafficModel
+from pathlib import Path
 
 # =========================
 # OpenAI setup
@@ -39,6 +41,13 @@ def load_model():
 
 model_bundle = load_model()
 
+@st.cache_resource
+def load_relative_model():
+    return WeekdayRelativeTrafficModel.from_json(Path(__file__).resolve().parent / "relative_traffic_weekday_v2.json")
+
+relative_model = load_relative_model()
+
+
 # =========================
 # Chat history
 # =========================
@@ -49,6 +58,14 @@ if "messages" not in st.session_state:
 # User input
 # =========================
 st.subheader("Traffic Input")
+mode = st.radio(
+    "Analysis mode",
+    ["V1 – Original decision-tree classification", "V2 – Relative traffic volume (weekday + hour)"],
+    horizontal=False,
+    help="V1 learns original Kaggle labels. V2 compares totals against weekday-and-hour historical baselines; neither measures live congestion.",
+)
+if mode.startswith("V2"):
+    st.warning("V2 uses weekday + hour baselines from training data (hour-only fallback for small groups). Source weekday labels cannot be independently calendar-verified. This measures relative traffic volume, not actual congestion or future traffic.")
 
 col1, col2 = st.columns(2)
 
@@ -70,20 +87,36 @@ st.write(f"**Total Vehicles:** {total}")
 # =========================
 # Prediction
 # =========================
-input_data = build_features(
-    model_bundle,
-    hour=time,
-    day=day,
-    car_count=car_count,
-    bike_count=bike_count,
-    bus_count=bus_count,
-    truck_count=truck_count,
-)
-
-if st.button("Predict Traffic Situation"):
-    prediction_label = predict_traffic(model_bundle, input_data)
-
-    st.success(f"Predicted Traffic Situation: **{prediction_label}**")
+if st.button("Analyze Traffic"):
+    if mode.startswith("V1"):
+        input_data = build_features(
+            model_bundle,
+            hour=time,
+            day=day,
+            car_count=car_count,
+            bike_count=bike_count,
+            bus_count=bus_count,
+            truck_count=truck_count,
+        )
+        prediction_label = predict_traffic(model_bundle, input_data)
+        st.success(f"Original Kaggle-label classification: **{prediction_label}**")
+        details = {"mode": "V1 – original decision tree", "prediction": prediction_label}
+    else:
+        result = relative_model.classify(day, int(time), int(total))
+        prediction_label = result.category.replace("_", " ").title()
+        st.success(f"Relative traffic volume (weekday + hour): **{prediction_label}**")
+        c1, c2 = st.columns(2)
+        c1.metric("Historical reference", f"{result.reference_vehicles:g} vehicles / 15 min")
+        c2.metric("Compared with reference", f"{result.ratio:.2f}×")
+        st.caption(f"Reference: {result.reference_type}; {result.baseline_observations} training observations for {day} at {time:02d}:00. Quartile cutoffs fitted on training data only. Dataset weekday labels are not independently calendar-verified; no congestion claim.")
+        details = {
+            "mode": "V2 – weekday-and-hour relative traffic volume",
+            "prediction": prediction_label,
+            "reference_vehicles": result.reference_vehicles,
+            "relative_ratio": round(result.ratio, 3),
+            "reference_type": result.reference_type,
+            "caveat": "Source weekday labels unverified; relative traffic volume only, NOT congestion or a forecast.",
+        }
 
     st.session_state.last_prediction = {
         "time": time,
@@ -93,7 +126,7 @@ if st.button("Predict Traffic Situation"):
         "bus_count": bus_count,
         "truck_count": truck_count,
         "total": total,
-        "prediction": prediction_label
+        **details,
     }
 
 # =========================
@@ -119,7 +152,12 @@ def build_prediction_context():
     - Bus count: {p["bus_count"]}
     - Truck count: {p["truck_count"]}
     - Total vehicles: {p["total"]}
-    - Predicted traffic situation: {p["prediction"]}
+    - Analysis mode: {p["mode"]}
+    - Classification result: {p["prediction"]}
+    - Historical reference (V2 only): {p.get("reference_vehicles", "N/A")}
+    - Relative ratio (V2 only): {p.get("relative_ratio", "N/A")}
+    - Reference method (V2): {p.get("reference_type", "N/A")}
+    - Important limitation: {p.get("caveat", "Original Kaggle-label classification; not a verified congestion measurement.")}
     """
 
 
@@ -148,7 +186,8 @@ def ask_ai_traffic_analyst(question, context, chat_history):
     {question}
 
     Answer clearly and professionally.
-    Include practical mobility or traffic-management insights when relevant.
+    Do not treat the classification as measured congestion, real-time observation, or future forecast.
+    Include practical mobility insights only when supported by the available data.
     """
 
     response = client.responses.create(

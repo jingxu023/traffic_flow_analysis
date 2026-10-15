@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements-app.txt
 COPY app.py train_model.py ./
 COPY src ./src
 COPY traffic_model.pkl label_encoder_day.pkl label_encoder_target.pkl ./
+COPY relative_traffic_weekday_v2.json ./
 
 EXPOSE 8501
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
