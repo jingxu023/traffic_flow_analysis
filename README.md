@@ -1,251 +1,188 @@
-# Traffic Analytics and DevOps Demo
+# Traffic Prediction Dashboard
 
-An interactive Streamlit dashboard that combines traffic prediction, machine learning,
-and optional AI-powered mobility analytics with a basic DevOps workflow.
+A Streamlit dashboard for exploring traffic data with a Decision Tree classifier, a time-based traffic-volume comparison, and an optional OpenAI assistant.
 
-This project was developed to explore how AI-assisted workflows can support traffic analysis, congestion interpretation, and mobility-related decision making.
+I started this project as a machine-learning exercise using vehicle counts from a Kaggle dataset. After testing the original classifier, I added a second mode to answer a different question: **is the entered traffic volume unusually high or low for that day and time?**
 
----
+The dashboard lets you enter the hour, weekday, and counts of cars, bikes, buses, and trucks. It then analyzes those inputs using either V1 or V2.
 
-## Project Overview
+## Dashboard
 
-The application allows users to:
+**Traffic input and classification**
 
-- Input traffic conditions manually
-- Predict traffic situations using a Decision Tree machine learning model
-- Interact with an AI-powered Traffic Analyst Assistant
-- Receive natural-language explanations and mobility-related recommendations
-- Explore conversational traffic insights with chat history support
-- Run the service consistently in a local or cloud container environment
+![Traffic dashboard](Screenshot%202026-05-24%20at%2007.33.03.png)
 
-The project combines traditional machine learning with large language model (LLM) integration to create an AI-assisted traffic analytics workflow.
+**Optional AI Traffic Analyst**
 
----
+![AI assistant](Screenshot%202026-05-24%20at%2007.33.12.png)
 
-## Features
+These screenshots show the earlier dashboard interface. The current version also includes the V1/V2 mode selector and V2 reference values.
 
-- Traffic situation prediction using a trained Decision Tree classifier
-- Interactive Streamlit dashboard interface
-- Vehicle traffic input for:
-  - Cars
-  - Bikes
-  - Buses
-  - Trucks
-- AI-powered Traffic Analyst Assistant using OpenAI API
-- Conversational AI interaction with chat history
-- Mobility-related congestion analysis and recommendations
-- Natural-language interpretation of prediction results
+## Two ways to analyze traffic
 
----
+### V1 — Decision Tree classification
 
-## Dashboard Preview
+V1 is a supervised classification model trained on **2,976 records** from `Traffic.csv`. The dataset already provides four `Traffic Situation` labels: `low`, `normal`, `high`, and `heavy`.
 
-### Main Dashboard
+The model uses the hour, weekday, and four vehicle counts to classify an input into one of those original labels. It does not generate the labels itself, and it is not forecasting vehicle numbers in the future.
 
-![Dashboard Screenshot](Screenshot%202026-05-24%20at%2007.33.03.png)
+During development, I also tested a model that included the `Total` vehicle count. I then excluded that redundant total from the final model, leaving the individual vehicle counts as inputs.
 
----
+**Feature importance of the saved V1 Decision Tree (`traffic_model.pkl`):**
 
-### AI Traffic Analyst Assistant
+| Feature | Importance |
+|:--|--:|
+| CarCount | **50.30%** |
+| BusCount | 19.58% |
+| TruckCount | 18.20% |
+| Hour | 7.09% |
+| BikeCount | 4.18% |
+| Day of the week | 0.66% |
 
-![AI Assistant Screenshot](Screenshot%202026-05-24%20at%2007.33.12.png)
+The vehicle counts have the largest influence on the tree's splits. Hour and weekday are used too, but much less. Feature importance here measures the relative reduction in node impurity; **it does not describe the causes of congestion**.
 
----
+### Why I added V2
 
-## AI Traffic Analyst Assistant
+While testing V1, I noticed that changing the hour or weekday often left the predicted label unchanged when the vehicle counts stayed the same. The feature importance results helped explain this: the Decision Tree relies mainly on vehicle counts when reproducing the original dataset labels.
 
-The dashboard includes an AI-powered assistant that allows users to ask natural-language questions about traffic situations and mobility patterns.
+That isn't necessarily a bug. But I wanted to explore something V1 wasn't designed to answer: **how does a given traffic count compare with what is typical for that weekday and hour?**
 
-The assistant can:
+### V2 — Relative traffic-volume classification
 
-- Explain predicted traffic conditions
-- Analyze vehicle composition
-- Identify possible congestion trends
-- Suggest mobility-related improvements
-- Support traffic interpretation with conversational context
+V2 uses a simple, rule-based comparison instead of training another Decision Tree.
 
-### Example Questions
-
-- "What does this traffic situation mean?"
-- "Which vehicle type contributes most to traffic volume?"
-- "What could mobility planners learn from this result?"
-- "Give one recommendation to reduce congestion."
-
----
-
-## Workflow
-
-The system combines machine learning prediction with AI-powered analysis.
+1. Find the historical **median** vehicle count for the selected weekday and hour, using a training-only portion of the dataset.
+2. Divide the entered total by that reference value.
+3. Assign a relative-volume category: `Low`, `Normal`, `High`, or `Very High`. The boundaries come from quartiles of the training-data ratios.
 
 ```text
-User Input
-    ↓
-Traffic Prediction Model
-    ↓
-Prediction Result
-    ↓
-Context Generation
-    ↓
-OpenAI API
-    ↓
-AI Traffic Analysis Response
+Relative ratio = entered total vehicles / historical median vehicles
 ```
 
----
+For example, 150 vehicles might be lower than usual on a busy morning but well above the normal level late at night. V2 can show that distinction because its reference changes with the selected time.
 
-## Machine Learning Model
+If a weekday/hour group contains fewer than **8 observations**, V2 falls back to the median for that hour across all weekdays.
 
-Two Decision Tree classification models were tested during development.
+These are **relative traffic-volume categories**, not measured levels of congestion. V2 does not use the original Kaggle `Traffic Situation` labels.
 
-- Model 1 included the `Total` vehicle count feature and achieved perfect accuracy.
-- Model 2 excluded the redundant `Total` feature to improve interpretability and reduce feature dependency.
+### V1 vs. V2
 
-The final application uses the more interpretable model configuration for prediction and AI-assisted analysis.
+| | V1: Decision Tree | V2: Relative volume |
+|:--|:--|:--|
+| Question | Which original traffic label fits this input? | Is this count high or low for this weekday and hour? |
+| Method | Supervised machine learning | Historical median, ratio, and quartile-based rules |
+| Output | `low`, `normal`, `high`, `heavy` | `Low`, `Normal`, `High`, `Very High` |
+| Time information | Model features, with relatively low importance | Directly determines the reference value |
+| Original Kaggle labels | Used for training | Not used |
 
----
+## AI Traffic Analyst (optional)
 
-## Technologies Used
+The dashboard includes an assistant powered by the OpenAI API. It receives the current analysis context and can answer follow-up questions in natural language, for example:
 
-- Python
-- Pandas
-- Scikit-learn
-- Streamlit
-- OpenAI API
-- Matplotlib
-- Seaborn
-- Pickle
-- Git / GitHub
-- Docker
-- Pytest and Ruff
-- GitHub Actions
+- “What does this traffic situation mean?”
+- “Which vehicle type contributes most to the total?”
+- “Why does V2 rate this time differently?”
 
----
+The assistant is for interpreting results and discussing possible mobility implications. Its answers are **not independent measurements or verified traffic forecasts**. The dashboard's V1 and V2 features work without an API key.
 
-## Project Structure
+## Run with Docker
 
-```text
-traffic_flow_analysis/
-│
-├── app.py
-├── src/prediction.py
-├── tests/test_prediction.py
-├── Dockerfile
-├── docker-compose.yml
-├── .github/workflows/ci.yml
-├── traffic_model.pkl
-├── label_encoder_day.pkl
-├── label_encoder_target.pkl
-├── requirements-app.txt
-├── requirements-dev.txt
-├── .env
-├── .gitignore
-├── README.md
-└── Traffic Prediction.ipynb
-```
-
----
-
-## Installation
-
-Clone the repository:
+From the project directory, with Docker running:
 
 ```bash
 git clone https://github.com/jingxu023/traffic_flow_analysis.git
 cd traffic_flow_analysis
+docker compose up --build -d
 ```
 
-Create and activate a virtual environment:
+Open **http://localhost:8501**.
 
 ```bash
-python3 -m venv myvenv
-source myvenv/bin/activate
+# See application logs
+docker compose logs -f
+
+# Stop the service
+docker compose down
+
+# Rebuild after code changes
+docker compose up --build -d
 ```
 
-Install dependencies:
+The Docker image includes the saved V1 model, encoders, and V2 reference data. The Streamlit health endpoint is at `http://localhost:8501/_stcore/health`.
+
+### Enable the OpenAI assistant
+
+Create a private `.env` file based on `.env.example`:
 
 ```bash
-pip install -r requirements-app.txt
+cp .env.example .env
 ```
 
----
-
-## OpenAI API Setup
-
-Create a `.env` file in the project root:
+Edit `.env` and replace the example value with your own valid API key:
 
 ```env
-OPENAI_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_actual_api_key
 ```
 
----
-
-## Run the App
+Then recreate the container so it receives the updated environment variable:
 
 ```bash
-streamlit run app.py
+docker compose up -d --force-recreate
 ```
 
-## DevOps Workflow
+**Never commit `.env` or share your key.** An invalid or missing key only affects the optional assistant, not V1 or V2.
 
-The repository includes a small but complete development and operations workflow:
-
-- A Docker container with a Streamlit health check
-- Automated linting, tests, and image builds in GitHub Actions
-- Structured prediction logs including result and execution time
-- Environment-based secret configuration; `.env` is never committed
-- Input validation and operation without an OpenAI API key
-
-Run the test suite locally:
+## Run without Docker
 
 ```bash
-pip install -r requirements-dev.txt
-pytest -q
+git clone https://github.com/jingxu023/traffic_flow_analysis.git
+cd traffic_flow_analysis
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-app.txt
+python -m streamlit run app.py
+```
+
+On Windows, use `.venv\\Scripts\\activate` instead of the `source` command.
+
+## Tests and development workflow
+
+The project includes input validation, logging, automated tests, linting with Ruff, and a GitHub Actions workflow that checks the code and builds a Docker image.
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ruff check app.py train_model.py src tests
 ```
 
-Run the containerized service:
+To regenerate the V2 reference values from the CSV:
 
 ```bash
-docker compose up --build
+python build_weekday_v2.py --csv Traffic.csv
 ```
 
-Open `http://localhost:8501`. The health endpoint is available at
-`http://localhost:8501/_stcore/health`.
+## Main files
 
-## Architecture
+| File | Role |
+|:--|:--|
+| `app.py` | Streamlit interface, mode selector, and AI assistant |
+| `train_model.py` | V1 Decision Tree training |
+| `src/prediction.py` | V1 feature processing and predictions |
+| `src/relative_weekday.py` | V2 weekday/hour reference lookup and classification |
+| `src/relative_traffic.py` | Reusable hour-based relative-volume logic |
+| `build_weekday_v2.py` | Generates the V2 weekday/hour reference file |
+| `relative_traffic_weekday_v2.json` | Saved reference medians and category cutoffs |
+| `tests/` | Prediction and relative-volume tests |
+| `Dockerfile`, `docker-compose.yml` | Container setup |
+| `.github/workflows/ci.yml` | CI checks |
 
-```mermaid
-flowchart LR
-    User[Planner] --> UI[Streamlit dashboard]
-    UI --> Prediction[Prediction service]
-    Prediction --> Model[Versioned ML model]
-    UI -. optional .-> OpenAI[AI traffic analyst]
-    Prediction --> Logs[Structured logs and timing]
-    GitHub[GitHub Actions] --> Tests[Lint and tests]
-    Tests --> Image[Docker image]
-```
+## Limitations
 
-The dashboard currently focuses on traffic prediction rather than claiming to be a
-complete digital twin. The architecture could later be extended with live infrastructure
-data, railway sections, train movements, delays, or infrastructure condition data.
+This project uses a small historical dataset, not a live traffic feed.
 
----
+- The original dataset's four V1 labels are provided, but their labeling criteria have not been independently verified.
+- V2 uses the dataset's weekday labels. Because full month/year dates are missing and parts of the date sequence are inconsistent, those weekday labels cannot be independently checked against a calendar.
+- Each weekday/hour reference is based on a limited number of recorded days. Observations from the same day are not fully independent.
+- Neither version has traffic-speed or road-capacity measurements, so neither can confirm a traffic jam. Neither version predicts future traffic volume.
 
-## Future Improvements
-
-- Real-time traffic data integration
-- CSV upload support
-- LangChain-based workflow orchestration
-- Automated anomaly detection
-- Multi-agent traffic analysis workflows
-- Prometheus metrics and a Grafana dashboard
-- Deployment to Azure Container Apps or Kubernetes
-
-
-## V2 – relative traffic-volume classification (weekday + hour)
-
-The app has exactly two modes: **V1** (original Kaggle-label Decision Tree) and **V2** (weekday-and-hour relative traffic volume). V2 compares 15-minute vehicle totals to the median observed for the selected weekday and hour in a training-only subset. Groups with fewer than eight observations fall back to the hour-only median. Four categories are derived from quartiles of relative ratios in training data.
-
-**Limitations:** Source weekday labels are not independently calendar-verified because full month/year timestamps are unavailable and the date sequence is inconsistent. This is an exploratory relative traffic-volume indicator, **not** measured congestion, a real-time system, or future-flow prediction. See `README_V2.md` for further details.
-
-Regenerate reference data: `python build_weekday_v2.py --csv Traffic.csv`. Run tests: `python -m pytest -q`.
+V2 grew out of a practical question I ran into while testing V1. Keeping both modes makes it easier to see the difference between learning existing labels and making a transparent comparison against a historical baseline.
